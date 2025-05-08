@@ -3,6 +3,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 import yaml
 import re
+import os
 import uuid
 
 client = QdrantClient(url="http://localhost:6333")
@@ -37,8 +38,15 @@ def extract_metadata_from_mdx(file_path: str):
 
 def create_chunks(article_content: str):
     chunks = []
-    for chunk in article_content.split("\n\n"):
-        chunks.append(chunk)
+    current_chunk = ""
+
+    for line in article_content.split("\n\n"):
+        if line.startswith("#"):
+            chunks.append(current_chunk)
+            current_chunk = line + "\n"
+        else:
+            current_chunk += line + "\n"
+
     return chunks
 
 
@@ -68,7 +76,7 @@ def generate_embeddings(text: str):
         "http://localhost:11434/api/embed",
         json={"model": "mxbai-embed-large", "input": text},
     )
-    if len(response.json()["embeddings"]) > 0:  
+    if len(response.json()["embeddings"]) > 0:
         return response.json()["embeddings"][0]
     else:
         return None
@@ -92,7 +100,7 @@ def store_article(metadata: dict, chunks: list[str]):
                     id=chunk_id, vector=embeddings,
                     payload=adjusted_metadata
                 )],
-        )
+            )
 
 
 def main():
@@ -125,7 +133,7 @@ def main():
     relevant_passages = "\n".join(
         [f"- Article Title: {point.payload['title']} -- Article Slug: {point.payload['slug']} -- Article Content: {point.payload['content']}" for point in results.points])
 
-    print(relevant_passages)
+    # print(relevant_passages)
 
     augmented_prompt = f"""
       The following are relevant passages:
