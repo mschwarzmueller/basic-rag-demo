@@ -65,7 +65,10 @@ def generate_response(prompt: str):
         json={
             "model": "gemma3:12b-it-qat",
             "prompt": prompt,
-            "stream": False
+            "stream": False,
+            "options": {
+                "num_ctx": 10000
+            }
         }
     )
     return response.json()["response"]
